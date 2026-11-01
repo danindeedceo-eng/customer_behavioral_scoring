@@ -1,0 +1,1339 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0E17">
+<title>Поведенческий скоринг · демо</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Слева — что видит клиент в приложении (визуальный язык ВТБ Онлайн), справа — что в этот момент видит антифрод банка */
+:root{
+  --page:#EDF0F6; --card:#FFFFFF; --tile:#F1F3F7; --tile-press:#E1E6F0; --line:#E2E6EE; --line-strong:#C9D0DC;
+  --ink:#14171F; --muted:#707888; --blue:#2A5BF0; --blue-soft:#E7EEFF; --navy:#0B1D5E; --navy2:#1A3286;
+  --ok:#14995A; --ok-soft:#DDF3E7; --warn:#D97F00; --warn-soft:#FFF0D6; --bad:#E0312B; --bad-soft:#FDE3E2;
+  --base:#9AA3B5; --call:#2BB45F; --os:#0D1120;
+  --grad:radial-gradient(70% 90% at 92% 8%,rgba(132,206,255,.95) 0,rgba(132,206,255,0) 60%),radial-gradient(80% 90% at 0% 100%,rgba(122,76,255,.75) 0,rgba(122,76,255,0) 60%),linear-gradient(160deg,#0A2499 0%,#1C46DB 52%,#2F78F3 100%);
+  --shadow:0 1px 2px rgba(20,23,31,.05),0 12px 32px rgba(20,23,31,.07);
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1,"cv11" 1}
+button{font-family:inherit}
+[hidden]{display:none!important}
+
+/* ---------- шапка страницы ---------- */
+.hero{background:var(--grad);color:#fff;padding:22px 0 58px}
+.inner{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.hero .inner{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px 28px}
+.badge{display:inline-flex;align-items:center;gap:8px;font:600 12.5px/1 var(--font);padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.16);backdrop-filter:blur(8px)}
+.hero h1{font:800 clamp(28px,3vw,40px)/1.06 var(--font);letter-spacing:-.025em;margin:12px 0 8px;text-wrap:balance}
+.hero p{margin:0;max-width:92ch;color:rgba(255,255,255,.82);font-size:15.5px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{font:600 15px/1 var(--font);border-radius:14px;padding:14px 20px;line-height:1;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;background:var(--blue-soft);color:var(--blue)}
+.btn.white{background:#fff;color:var(--blue)}
+.btn.ghost{background:rgba(255,255,255,.16);color:#fff}
+.btn.primary{background:var(--blue);color:#fff}
+.btn:hover{filter:brightness(1.05)}
+.btn svg{flex:none}
+.btn:focus-visible,.tap:focus-visible,.go:focus-visible,.round:focus-visible,.sheet button:focus-visible,.stop button:focus-visible{outline:3px solid #8FB0FF;outline-offset:2px}
+
+.wrap{margin-top:-40px;display:flex;flex-direction:column;gap:18px;padding-bottom:36px}
+
+/* подсказка по шагам */
+.guide{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;background:var(--card);border-radius:22px;padding:14px 18px;box-shadow:var(--shadow)}
+.steps{display:flex;gap:8px;flex-wrap:wrap}
+.step-pill{font:600 13px/1 var(--font);padding:9px 13px;border-radius:999px;background:var(--tile);color:var(--muted);white-space:nowrap}
+.step-pill.on{background:var(--blue);color:#fff}
+.step-pill.done{background:var(--ok-soft);color:var(--ok)}
+.guide-text{flex:1 1 360px;min-width:0;margin:0}
+.guide-actions{display:flex;gap:8px;flex-wrap:wrap}
+.guide-actions:empty{display:none}
+
+.stage{display:grid;grid-template-columns:372px minmax(0,1fr);gap:24px;align-items:start}
+
+/* ---------- телефон ---------- */
+.phone-col{display:flex;flex-direction:column;align-items:center;gap:10px;position:sticky;top:16px}
+.phone{width:372px;height:752px;background:#0B0E17;border-radius:56px;padding:12px;box-shadow:0 0 0 2px #2A3043,0 30px 60px rgba(11,29,94,.25);position:relative}
+.screen{position:relative;height:100%;border-radius:44px;background:#fff;color:var(--ink);overflow:hidden;display:flex;flex-direction:column;isolation:isolate}
+.screen.auto{pointer-events:none}
+.topbg{position:absolute;inset:0 0 auto 0;height:330px;background:var(--grad);z-index:-1}
+.notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:106px;height:30px;border-radius:16px;background:#0B0E17;z-index:20}
+.status{display:flex;justify-content:space-between;align-items:center;padding:16px 30px 4px;font:600 14px/1 var(--font);color:#fff;flex:none;position:relative;z-index:13}
+.status-r{display:flex;gap:6px;align-items:center;font-size:12px}
+.batt{width:24px;height:12px;border:1.5px solid rgba(255,255,255,.8);border-radius:4px;position:relative}
+.batt::after{content:"";position:absolute;inset:1.5px 6px 1.5px 1.5px;background:#fff;border-radius:1.5px}
+.phone-note{margin:0;font-size:12.5px;color:var(--muted);text-align:center;max-width:340px}
+
+.callbar{margin:6px 14px 0;border-radius:16px;background:var(--call);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;font:600 13px/1.2 var(--font);flex:none}
+.callbar .dot{width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block;margin-right:7px;animation:blink 1.2s infinite}
+.countdown{background:rgba(13,17,32,.85);border-radius:8px;padding:3px 7px}
+.countdown.hot{background:var(--bad)}
+@keyframes blink{50%{opacity:.25}}
+.bubble{margin:8px 14px 0;background:rgba(9,20,70,.42);backdrop-filter:blur(10px);color:#fff;border-radius:18px;padding:10px 13px;font-size:13.5px;line-height:1.35;flex:none;min-height:64px}
+.bubble .who{display:flex;align-items:center;gap:6px;font:600 11px/1 var(--font);letter-spacing:.02em;color:#FFC9C6;margin-bottom:6px}
+.bubble .digits{font-weight:700;white-space:nowrap}
+
+.view{flex:1;display:flex;flex-direction:column;min-height:0}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 20px 14px;color:#fff;flex:none}
+.bar h3{margin:0;font:700 22px/1.15 var(--font);letter-spacing:-.01em}
+.bar .ico{display:flex;gap:14px}
+.bar.form{justify-content:flex-start;gap:6px;padding:10px 14px 12px}
+.bar.form h3{font-size:18px}
+.bar.form small{display:block;font:500 12.5px/1.2 var(--font);color:rgba(255,255,255,.75);margin-top:2px}
+.glass-row{display:flex;gap:10px;padding:0 14px 16px;overflow:hidden;flex:none}
+.glass{flex:0 0 112px;height:92px;border-radius:18px;background:rgba(255,255,255,.16);backdrop-filter:blur(10px);padding:11px 12px;color:#fff;display:flex;flex-direction:column;justify-content:space-between}
+.glass .gi{width:30px;height:30px;border-radius:10px;background:rgba(255,255,255,.2);display:grid;place-items:center}
+.glass span{font:500 13px/1.2 var(--font)}
+.glass b{display:block;font:700 14px/1.2 var(--font)}
+.incall .glass-row{display:none}
+
+.sheet-body{flex:1;background:#fff;border-radius:28px 28px 0 0;padding:20px 16px 0;display:flex;flex-direction:column;min-height:0;position:relative}
+.sheet-body h4{margin:0 0 12px;font:700 22px/1.2 var(--font);letter-spacing:-.01em}
+.sheet-body h5{margin:16px 0 10px;font:700 17px/1.2 var(--font)}
+.search{display:flex;align-items:center;gap:10px;height:50px;border:1px solid var(--line-strong);border-radius:16px;padding:0 14px;color:var(--muted);font-size:15px;cursor:pointer;background:#fff;width:100%;text-align:left}
+.search .pi{color:var(--blue);display:grid}
+.search .lbl{flex:1;white-space:nowrap}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;line-height:1.2;text-align:center;color:var(--ink)}
+.tile i{width:50px;height:50px;border-radius:15px;background:var(--tile);display:grid;place-items:center;font-style:normal}
+.people{display:flex;gap:14px}
+.go{border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font:500 12.5px/1 var(--font);color:var(--ink);width:56px}
+.ava{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:700 19px/1 var(--font)}
+.ava.b{background:var(--blue-soft);color:var(--blue)}
+.ava.g{background:var(--ok-soft);color:var(--ok)}
+.ava.p{background:#FBE4F3;color:#C2338E}
+.ava.n{background:var(--tile);color:var(--muted)}
+.regular{display:flex;align-items:center;gap:12px;background:var(--tile);border-radius:18px;padding:11px 14px}
+.regular i{width:38px;height:38px;border-radius:12px;background:#fff;display:grid;place-items:center;flex:none}
+.regular span{flex:1;font:500 14px/1.25 var(--font)}
+.regular small{display:block;font-size:12px;color:var(--muted)}
+.regular b{font:700 14px/1 var(--font)}
+
+.tabbar{position:absolute;left:12px;right:12px;bottom:12px;height:62px;border-radius:26px;background:linear-gradient(90deg,var(--navy),var(--navy2));display:grid;grid-template-columns:repeat(5,1fr);align-items:center;z-index:4;box-shadow:0 8px 24px rgba(11,29,94,.35)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(255,255,255,.62);font:500 10.5px/1 var(--font);position:relative}
+.tab.on{color:#fff;font-weight:700}
+.tab .bdg{position:absolute;top:-6px;right:12px;background:#E5294B;color:#fff;font:700 10px/1 var(--font);border-radius:999px;padding:3px 5px}
+
+/* форма перевода */
+.card{background:var(--tile);border-radius:18px;padding:11px 14px;border:1.5px solid transparent;user-select:none;-webkit-user-select:none;flex:none}
+.card + .card{margin-top:10px}
+.card.active{border-color:var(--blue);background:#fff}
+.card.flash{animation:flash .5s 2}
+@keyframes flash{50%{border-color:var(--bad)}}
+.contact{display:flex;align-items:center;gap:12px}
+.contact .ava{width:40px;height:40px;font-size:16px;flex:none}
+.label{font-size:12.5px;color:var(--muted)}
+.value{font:600 16px/1.3 var(--font)}
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tag{font:600 11px/1 var(--font);padding:5px 8px;border-radius:999px;white-space:nowrap}
+.tag.known{background:var(--ok-soft);color:var(--ok)}
+.tag.new{background:var(--warn-soft);color:var(--warn)}
+.amount{font:700 30px/1.15 var(--font);letter-spacing:-.01em;margin:2px 0}
+.keypad{margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:none}
+.key{height:48px;border-radius:14px;border:0;background:var(--tile);color:var(--ink);font:500 22px/1 var(--font);cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;transition:background .08s}
+.key.pressed{background:var(--tile-press)}
+.key.blank{visibility:hidden}
+.spacer{flex:1;min-height:6px}
+.send{margin:10px 0 16px;height:52px;border-radius:16px;border:0;background:var(--blue);color:#fff;font:600 17px/1 var(--font);cursor:pointer;touch-action:manipulation;transition:transform .08s;flex:none}
+.send.pressed{transform:scale(.985)}
+
+.taps{position:absolute;inset:0;pointer-events:none;z-index:15}
+.tapdot{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--blue);animation:tapfade 1.6s ease-out forwards}
+.tapdot::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--blue);animation:ring .55s ease-out forwards}
+@keyframes tapfade{0%{opacity:1}65%{opacity:.85}100%{opacity:0;transform:scale(.5)}}
+@keyframes ring{from{transform:scale(.3);opacity:1}to{transform:scale(1.5);opacity:0}}
+.finger{position:absolute;left:50%;top:80%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:var(--ink);opacity:.2;z-index:16;pointer-events:none;transition:left .16s ease-out,top .16s ease-out,transform .08s}
+.finger.down{transform:scale(.82);opacity:.34}
+
+/* входящий звонок */
+.incoming{position:absolute;inset:0;z-index:12;background:radial-gradient(80% 60% at 50% 20%,#2A355C 0,#0D1120 70%);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:100px 26px 70px}
+.ring-ico{width:78px;height:78px;border-radius:50%;margin:0 auto 18px;background:rgba(255,255,255,.12);display:grid;place-items:center;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{transform:scale(1.07)}}
+.caller{font:600 26px/1.2 var(--font);margin:0}
+.caller-sub{opacity:.7;font-size:14px;margin:6px 0 0}
+.call-actions{display:flex;gap:64px}
+.round{width:70px;height:70px;border-radius:50%;border:0;cursor:pointer;display:grid;place-items:center;color:#fff}
+.round.accept{background:var(--call)}
+.round.decline{background:var(--bad)}
+.round-lbl{display:block;font-size:12.5px;margin-top:8px;opacity:.8}
+
+/* меры: шторка и экран приостановки */
+.backdrop{position:absolute;inset:0;z-index:10;background:rgba(10,16,40,.45)}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:11;background:#fff;border-radius:28px 28px 0 0;padding:12px 20px 26px;display:flex;flex-direction:column;gap:10px;animation:up .28s ease-out}
+.sheet::before{content:"";width:38px;height:5px;border-radius:3px;background:var(--line-strong);align-self:center;margin-bottom:6px}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.s-ico{width:56px;height:56px;border-radius:50%;display:grid;place-items:center}
+.s-ico.ok{background:var(--ok-soft);color:var(--ok)}
+.s-ico.warn{background:var(--warn-soft);color:var(--warn)}
+.s-ico.bad{background:var(--bad-soft);color:var(--bad)}
+.sheet h3,.stop h3{font:700 21px/1.2 var(--font);margin:4px 0 0;letter-spacing:-.01em}
+.sheet p{margin:0;font-size:14.5px;color:var(--muted)}
+.sheet .sum{font:700 26px/1.2 var(--font);color:var(--ink)}
+.sheet-btns{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.sheet button,.stop button{height:50px;border-radius:16px;border:0;background:var(--blue-soft);color:var(--blue);font:600 15.5px/1 var(--font);cursor:pointer}
+.sheet button.main,.stop button.main{background:var(--blue);color:#fff}
+.stop{position:absolute;inset:0;z-index:11;background:#fff;display:flex;flex-direction:column;animation:fade .25s ease-out}
+@keyframes fade{from{opacity:0}}
+.stop-top{background:var(--grad);padding:56px 20px 46px;color:#fff;text-align:center}
+.stop-top .s-ico{margin:0 auto 12px;background:#fff;color:var(--bad);width:64px;height:64px}
+.stop-top h3{color:#fff}
+.stop-top p{margin:6px 0 0;color:rgba(255,255,255,.85);font-size:14.5px}
+.stop-body{flex:1;background:#fff;border-radius:28px 28px 0 0;margin-top:-26px;padding:18px 18px 22px;display:flex;flex-direction:column;gap:10px}
+.alert{display:flex;gap:10px;align-items:flex-start;background:var(--bad-soft);color:#9C1E19;border-radius:16px;padding:11px 13px;font-size:13.5px;line-height:1.35}
+.alert b{display:block;font-weight:700}
+.alert .dot{width:9px;height:9px;border-radius:50%;background:var(--bad);margin-top:5px;flex:none;animation:blink 1.2s infinite}
+.tip{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.35;color:var(--ink);padding:2px 2px}
+.tip i{width:24px;height:24px;border-radius:8px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font:700 12px/1 var(--font);font-style:normal;flex:none}
+.stop .spacer{flex:1}
+
+/* ---------- панель антифрода ---------- */
+.panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;min-width:0}
+.panel-h{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:2px 4px -4px}
+.panel-h b{font:700 18px/1.2 var(--font)}
+.panel-h span{font-size:13px;color:var(--muted)}
+.box{background:var(--card);border-radius:24px;padding:20px 22px;min-width:0;box-shadow:var(--shadow)}
+.box.wide{grid-column:1/-1}
+.box-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+.box h2{font:700 16px/1.2 var(--font);margin:0}
+.ctx{font:600 12px/1 var(--font);padding:7px 11px;border-radius:999px;background:var(--blue-soft);color:var(--blue);white-space:nowrap}
+
+.score-grid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 28px;align-items:end}
+.score-num{font:800 88px/.9 var(--font);letter-spacing:-.045em}
+.score-num small{font:500 16px/1 var(--font);color:var(--muted);letter-spacing:0;margin-left:6px}
+.verdict{font:600 15px/1.2 var(--font);padding:10px 14px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;justify-self:start}
+.verdict::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.verdict.ok{background:var(--ok-soft);color:var(--ok)}
+.verdict.warn{background:var(--warn-soft);color:var(--warn)}
+.verdict.bad{background:var(--bad-soft);color:var(--bad)}
+.verdict.idle{background:var(--tile);color:var(--muted)}
+.scale-wrap{grid-column:1/-1;position:relative;margin-top:16px;padding-bottom:22px}
+.scale{display:grid;grid-template-columns:30fr 30fr 40fr;height:12px;border-radius:999px;overflow:hidden;gap:3px}
+.scale span:nth-child(1){background:#BFE8D2}
+.scale span:nth-child(2){background:#FFDDA3}
+.scale span:nth-child(3){background:#F9B9B6}
+.marker{position:absolute;top:-7px;left:0;width:5px;height:26px;margin-left:-2.5px;border-radius:3px;background:var(--navy);box-shadow:0 0 0 2px #fff;transition:left .55s cubic-bezier(.2,.8,.2,1)}
+.tick{position:absolute;top:18px;font:500 12px/1 var(--font);color:var(--muted);transform:translateX(-50%);white-space:nowrap}
+.tick:first-of-type{transform:none}
+.tick.end{transform:translateX(-100%)}
+.zones{grid-column:1/-1;display:grid;grid-template-columns:30fr 30fr 40fr;font-size:12.5px;color:var(--muted);gap:6px}
+.compare{grid-column:1/-1;margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cmp{border-radius:16px;padding:12px 14px;background:var(--tile)}
+.cmp.with{background:var(--blue-soft)}
+.cmp .k{font-size:12.5px;color:var(--muted)}
+.cmp .v{font:700 17px/1.3 var(--font);margin-top:3px}
+.cmp .v small{font:500 13px/1.3 var(--font);color:var(--muted);display:block;margin-top:2px}
+
+.rows{display:flex;flex-direction:column}
+.brow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+.brow small{display:block;color:var(--muted);font-size:12.5px;line-height:1.3;margin-top:2px}
+.brow .pts{font:700 15px/1 var(--font);text-align:right;white-space:nowrap}
+.brow .pts i{font-style:normal;font-weight:400;font-size:11.5px;color:var(--muted);display:block;margin-top:4px}
+.brow.zero .t,.brow.zero .pts{color:var(--muted)}
+.brow.hit .pts{color:var(--blue)}
+.brow.total{border-bottom:0;padding-top:12px;font-weight:700}
+.brow.total .pts{font-size:19px;color:var(--ink)}
+.rules{grid-column:1/-1;margin-top:2px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;align-items:center}
+.rules-t{grid-column:1/-1}
+.rules-t b{display:block;font-size:13.5px}
+.rules-t span{display:block;font-size:12.5px;color:var(--muted);line-height:1.35;margin-top:2px}
+.cells{display:grid;grid-template-columns:repeat(12,minmax(0,34px));gap:4px}
+.cells span{height:24px;border-radius:6px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font:600 10.5px/1 var(--font);color:var(--muted);transition:background .2s}
+.cells.scan span{background:var(--ok-soft);border-color:#BFE8D2;color:var(--ok)}
+.rules-note{grid-column:1/-1;margin:0;padding-top:10px;border-top:1px dashed var(--line);font-size:13.5px;line-height:1.4;color:var(--ink)}
+
+.charts{display:flex;flex-direction:column;gap:14px}
+.target-row{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center}
+.target-row p{margin:0;font-size:13px;color:var(--muted)}
+.target-row p b{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.sw.base{background:var(--base)}
+.sw.cur{background:var(--blue)}
+.sub-h{font:600 13px/1.2 var(--font);color:var(--ink);margin:0 0 6px}
+svg{display:block;max-width:100%}
+.chart text{font-family:var(--font);font-size:10px;fill:var(--muted)}
+.c-ring{fill:none;stroke:var(--line-strong);stroke-width:1}
+.c-ring.half{stroke-dasharray:3 3}
+.c-axis{stroke:var(--line);stroke-width:1}
+.c-base{fill:var(--base);opacity:.85}
+.c-cur{fill:var(--blue)}
+.r-base{stroke:var(--base);stroke-width:2;stroke-linecap:round}
+.r-cur{stroke:var(--blue);stroke-width:2.4;stroke-linecap:round}
+.r-pause{fill:var(--warn-soft)}
+.chart .r-pause-t{fill:var(--warn)}
+.r-line{stroke:var(--line);stroke-width:1}
+
+.prof-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 12px}
+.sess{display:flex;gap:5px}
+.sess span{width:16px;height:16px;border-radius:50%;background:var(--tile);border:1.5px solid var(--line-strong)}
+.sess span.f{background:var(--blue);border-color:var(--blue)}
+.sess span.new{animation:pop .5s ease-out}
+@keyframes pop{50%{transform:scale(1.35)}}
+.prof{font-size:13px;color:var(--muted);margin:0;flex:1 1 300px}
+.prof b{color:var(--ink);font-weight:600}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font:600 12px/1.2 var(--font);color:var(--muted);text-align:left;padding:0 12px 8px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 12px 9px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.n{white-space:nowrap;font-weight:500}
+td.z{white-space:nowrap}
+.chip{font:600 12px/1 var(--font);padding:6px 10px;border-radius:999px;white-space:nowrap;display:inline-block}
+.chip.norm{background:var(--tile);color:var(--muted)}
+.chip.mid{background:var(--warn-soft);color:var(--warn)}
+.chip.high{background:var(--bad-soft);color:var(--bad)}
+.chip.okc{background:var(--ok-soft);color:var(--ok)}
+.zv{font:500 12px/1 var(--font);color:var(--muted);margin-left:6px}
+.tbl-note{margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+
+/* конвейер */
+.pipe-h{font:700 18px/1.2 var(--font);margin:8px 4px 0}
+.pipe{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:0;padding:0;list-style:none}
+.pstep{background:var(--card);border-radius:20px;padding:14px 16px;transition:box-shadow .25s,background .25s;min-width:0;box-shadow:var(--shadow)}
+.pstep .n{width:28px;height:28px;border-radius:9px;background:var(--tile);display:grid;place-items:center;font:700 13px/1 var(--font);color:var(--muted)}
+.pstep b{display:block;font-size:14.5px;margin:10px 0 4px}
+.pstep span{display:block;font-size:12.5px;color:var(--muted);line-height:1.35}
+.pstep.on{box-shadow:0 0 0 2px var(--blue),var(--shadow)}
+.pstep.on .n{background:var(--blue);color:#fff}
+.foot{font-size:12.5px;color:var(--muted);margin:0 4px;max-width:120ch}
+
+a.btn{text-decoration:none}
+.mob-banner{display:none;align-items:center;gap:10px;background:var(--card);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow);color:var(--ink);text-decoration:none;font-size:14px;line-height:1.3}
+.mob-banner svg{flex:none;color:var(--blue)}
+.mob-banner span{flex:1}
+.mob-banner b{flex:none;background:var(--blue);color:#fff;border-radius:12px;padding:9px 12px;font-size:14px}
+.mob-cta{display:flex;align-items:center;justify-content:space-between;gap:24px;background:var(--grad);color:#fff;border-radius:24px;padding:22px 26px;margin-top:6px}
+.mob-cta-t{display:flex;flex-direction:column;align-items:flex-start;gap:8px;max-width:60ch}
+.mob-cta-t b{font:800 22px/1.2 var(--font);letter-spacing:-.01em}
+.mob-cta-t span{color:rgba(255,255,255,.85);font-size:15px}
+.mob-cta-t .btn{margin-top:6px}
+.mob-qr{flex:none;width:148px;height:148px;border-radius:16px}
+@media (max-width:1100px){.pipe{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:980px){
+  .stage{grid-template-columns:minmax(0,1fr)}
+  .phone-col{position:static}
+  .phone{width:100%;max-width:400px;height:752px;padding:0;background:none;box-shadow:none}
+  .screen{border-radius:28px;box-shadow:var(--shadow)}
+  .notch{display:none}
+}
+@media (max-width:640px){
+  .hero{padding:20px 0 56px}
+  .hero p{font-size:14.5px}
+  .steps{display:none}
+  .panel{grid-template-columns:minmax(0,1fr)}
+  .pipe{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .score-num{font-size:70px}
+  .compare{grid-template-columns:minmax(0,1fr)}
+  .rules{grid-template-columns:minmax(0,1fr)}
+  .rules .chip{justify-self:start}
+  .target-row{grid-template-columns:130px minmax(0,1fr)}
+  .call-actions{gap:44px}
+  .cells span{font-size:9px}
+  .mob-banner{display:flex}
+  .mob-qr{display:none}
+  .mob-cta{padding:18px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ================= мобильная версия: телефон = приложение банка ================= */
+html,body{height:100%}
+body{background:#0B0E17;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+.m-root{position:fixed;inset:0;display:flex;flex-direction:column;background:#0B0E17;overflow:hidden;container:app / size}
+/* компьютер и планшет: телефон по центру на нейтральном фоне */
+@media (min-width:600px) and (min-height:640px){
+  body{background:#ECEEF1}
+  .m-root{--ph:clamp(600px,calc(100vh - 56px),880px);top:0;bottom:0;left:0;right:0;margin:auto;height:var(--ph);width:clamp(340px,calc(var(--ph) * .462),406px);border-radius:52px;box-shadow:0 0 0 12px #0B0E17,0 0 0 13px #2B3142,0 40px 90px rgba(20,23,31,.22)}
+  .m-root .screen{border-radius:0 0 40px 40px}
+  .m-bank{border-radius:24px 24px 40px 40px}
+}
+.pc-cap,.pc-qr{display:none}
+@media (min-width:1000px) and (min-height:640px){
+  .pc-cap{display:block;position:fixed;left:40px;top:36px;max-width:260px;color:#4B5263;font:500 14px/1.45 var(--font)}
+  .pc-cap b{display:block;color:#14171F;font:800 22px/1.15 var(--font);letter-spacing:-.015em;margin-bottom:6px}
+  .pc-qr{display:flex;flex-direction:column;align-items:center;gap:10px;position:fixed;right:40px;bottom:40px;width:196px;padding:16px 16px 14px;background:#fff;border-radius:24px;box-shadow:0 1px 2px rgba(20,23,31,.06),0 12px 32px rgba(20,23,31,.08);text-align:center;color:#4B5263;font:500 13px/1.35 var(--font)}
+  .pc-qr b{color:#14171F;font:700 14px/1.3 var(--font)}
+  .pc-qr svg{width:150px;height:150px;display:block}
+}
+.m-bar{flex:none;display:flex;align-items:center;gap:8px;min-height:58px;padding:calc(8px + env(safe-area-inset-top,0px)) 8px 8px 16px;background:#0B0E17;color:#fff;position:relative;z-index:46}
+.m-step{flex:1;min-width:0}
+.m-step b{display:block;font:700 13px/1.25 var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-step span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin-top:2px;font:500 12.5px/1.3 var(--font);color:rgba(255,255,255,.75)}
+.m-icon{flex:none;width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center;cursor:pointer}
+.m-chip{flex:none;display:flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:4px 4px 4px 12px;background:rgba(255,255,255,.12);color:#fff;font:600 12.5px/1 var(--font);cursor:pointer;white-space:nowrap}
+.m-chip b{min-width:40px;height:30px;padding:0 9px;border-radius:999px;display:grid;place-items:center;background:rgba(255,255,255,.18);color:#fff;font:800 15px/1 var(--font)}
+.m-chip.ok b{background:#DDF3E7;color:#14995A}
+.m-chip.warn b{background:#FFF0D6;color:#D97F00}
+.m-chip.bad b{background:#FDE3E2;color:#E0312B}
+.m-chip.pulse{animation:chip 1.1s ease-in-out infinite}
+@keyframes chip{50%{box-shadow:0 0 0 7px rgba(255,255,255,.28)}}
+.m-icon:focus-visible,.m-chip:focus-visible,.m-close:focus-visible{outline:3px solid #8FB0FF;outline-offset:2px}
+
+.m-root .screen{flex:1;height:auto;min-height:0;border-radius:0;box-shadow:none;border:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.m-root .view .bar{padding-top:16px}
+.m-root .callbar{margin-top:10px}
+.m-root .key{height:48px;height:clamp(42px,6.4cqh,58px)}
+.m-root .send{margin-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.m-root .tabbar{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.m-root .stop-top{padding-top:34px}
+.m-root .stop-body{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+.m-root .sheet{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.m-root .incoming{padding-top:84px}
+.m-root #viewForm .sheet-body{overflow-y:auto}
+@container app (max-height:720px){
+  .m-root .glass-row{display:none}
+  .m-root .bar.form small{display:none}
+  .m-root .bar.form{padding:8px 14px 10px}
+  .m-root .bubble{min-height:0;padding:8px 12px;font-size:13px}
+  .m-root .bubble .who{margin-bottom:4px}
+  .m-root .card{padding:9px 13px}
+  .m-root .amount{font-size:26px}
+  .m-root .keypad{gap:6px;margin-top:8px}
+  .m-root .key{height:42px;height:clamp(38px,6cqh,48px);font-size:20px}
+  .m-root .send{height:48px;margin-top:8px}
+  .m-root .sheet-body{padding-top:14px}
+  .m-root .stop-top{padding:22px 20px 38px}
+  .m-root .tip{font-size:13px}
+}
+@container app (max-height:680px){
+  .m-root #amtCard .label:last-child{display:none}
+  .m-root .key{height:38px;height:clamp(34px,5.8cqh,44px)}
+  .m-root .send{height:46px}
+  .m-root .callbar{margin-top:6px}
+}
+@container app (max-height:600px){
+  .m-root .bubble .who{display:none}
+  .m-root .card + .card{margin-top:6px}
+  .m-root .screen.incall .bar.form{display:none}
+  .m-step span{-webkit-line-clamp:1}
+}
+.m-root .stop{overflow-y:auto}
+.m-chip .sm{display:none}
+@container app (max-width:399px){.m-chip .lg{display:none}.m-chip .sm{display:inline}}
+
+/* интро и переход между сценами */
+.m-intro,.m-inter{position:absolute;inset:0;z-index:50;background:var(--grad);color:#fff;display:flex;flex-direction:column;overflow-y:auto;padding:calc(26px + env(safe-area-inset-top,0px)) 22px calc(22px + env(safe-area-inset-bottom,0px))}
+.m-inter{z-index:44;top:var(--barh,58px);justify-content:center;animation:fade .3s ease-out}
+.m-intro h1{font:800 clamp(28px,8.4vw,34px)/1.05 var(--font);letter-spacing:-.025em;margin:14px 0 10px}
+.m-intro p,.m-inter p{margin:0;font-size:15.5px;line-height:1.42;color:rgba(255,255,255,.88)}
+.m-list{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:8px}
+.m-list li{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.13);backdrop-filter:blur(8px);border-radius:16px;padding:10px 12px;font-size:14px;line-height:1.35}
+.m-list i{flex:none;width:26px;height:26px;border-radius:9px;background:#fff;color:#0A2499;display:grid;place-items:center;font:800 13px/1 var(--font);font-style:normal}
+.m-grow{flex:1;min-height:18px}
+.m-btns{display:flex;flex-direction:column;gap:10px}
+.m-btns .btn{width:100%;justify-content:center;padding:16px;font-size:16px;border-radius:16px}
+@container app (max-height:700px){.m-intro{padding-top:calc(18px + env(safe-area-inset-top,0px))}.m-intro h1{font-size:28px;margin:12px 0 8px}.m-intro p{font-size:14.5px}.m-list{margin-top:12px;gap:6px}.m-list li{padding:8px 12px;font-size:13.5px}.m-btns{gap:8px}.m-btns .btn{padding:14px}.m-note{margin-top:8px;font-size:12px}}
+.m-note{font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.72);text-align:center;margin:14px 0 0}
+.m-note a{color:#fff;font-weight:600;text-underline-offset:3px}
+.m-inter .ring{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;margin-bottom:20px;animation:pulse 1.4s infinite}
+.m-inter h2{font:800 30px/1.1 var(--font);letter-spacing:-.02em;margin:0 0 12px}
+.m-inter .btn{margin-top:26px;width:100%;justify-content:center;padding:17px;font-size:16px;border-radius:16px}
+
+/* шторка «Что видит банк» */
+.m-bank{position:absolute;left:0;right:0;bottom:0;top:var(--barh,58px);z-index:48;background:var(--page);border-radius:24px 24px 0 0;display:flex;flex-direction:column;box-shadow:0 -12px 40px rgba(0,0,0,.35);animation:up .3s ease-out}
+.m-bank-h{flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 14px 10px 18px}
+.m-bank-h b{display:block;font:800 19px/1.2 var(--font);letter-spacing:-.01em}
+.m-bank-h small{display:block;font:500 12.5px/1.35 var(--font);color:var(--muted);margin-top:3px}
+.m-close{flex:none;width:38px;height:38px;border-radius:50%;border:0;background:#fff;box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.m-bank-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:2px 12px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.m-bank .box{padding:16px;border-radius:20px}
+.m-bank .box-h{flex-wrap:wrap}
+.m-bank .score-grid{gap:8px 16px}
+.m-bank .score-num{font-size:64px}
+.m-bank .verdict{font-size:14px;padding:9px 12px}
+.m-bank .zones{font-size:11.5px}
+.m-bank .compare{grid-template-columns:minmax(0,1fr)}
+.m-bank .rules{grid-template-columns:minmax(0,1fr)}
+.m-bank .rules .chip{justify-self:start}
+.m-bank .cells{grid-template-columns:repeat(12,minmax(0,1fr));gap:3px}
+.m-bank .cells span{font-size:9.5px;height:22px;border-radius:5px}
+.m-bank .target-row{grid-template-columns:120px minmax(0,1fr);gap:12px}
+.m-bank table{font-size:12.5px}
+.m-bank td{padding:8px 8px 8px 0}
+.m-bank td.z{white-space:normal}
+.m-bank .zv{display:none}
+.m-bank .chip{font-size:11px;padding:5px 8px;white-space:normal}
+.m-bank th{font-size:11px}
+.m-actions{display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.m-actions .btn{width:100%;justify-content:center;padding:16px;border-radius:16px}
+.m-actions .link{text-align:center;font-size:13px;color:var(--muted);padding:6px}
+.m-actions .link a{color:var(--blue);font-weight:600}
+a.btn{text-decoration:none}
+
+.m-pipe{list-style:none;counter-reset:st;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.m-pipe li{counter-increment:st;display:grid;grid-template-columns:28px minmax(0,1fr);gap:2px 10px;align-items:start}
+.m-pipe li::before{content:counter(st);grid-row:1 / span 2;width:28px;height:28px;border-radius:9px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font:700 13px/1 var(--font)}
+.m-pipe b{font-size:14px;line-height:1.3}
+.m-pipe span{font-size:12.5px;color:var(--muted);line-height:1.3}
+.nojs{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:100;background:#fff;color:#14171F;border-radius:18px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3);font:500 14px/1.4 Inter,system-ui,sans-serif}
+.nojs b{display:block;font-size:15px;margin-bottom:4px}
+@media (max-width:1099px){.pc-cap{display:none!important}}
+@container app (max-height:580px){.m-note{display:none}}
+</style>
+</head>
+<body>
+<noscript><div class="nojs"><b>Демо не запустилось</b>Просмотрщик файлов не выполняет скрипты, поэтому кнопки не нажимаются. Откройте ссылку в браузере: danindeedceo-eng.github.io/customer_behavioral_scoring</div></noscript>
+<div class="pc-cap"><b>Поведенческий скоринг</b>Концепт для ВТБ Онлайн, кейс «Деньги под защитой». Пройдите демо мышкой прямо здесь или пальцем на своём телефоне.</div>
+<div class="pc-qr"><b>Пройдите на телефоне</b><svg viewBox="0 0 37 37" role="img" aria-label="QR-код этой страницы" shape-rendering="crispEdges"><path fill="#0B1D5E" d="M0 0h7v1h-7zM10 0h5v1h-5zM17 0h2v1h-2zM20 0h1v1h-1zM22 0h1v1h-1zM24 0h1v1h-1zM26 0h1v1h-1zM28 0h1v1h-1zM30 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM10 1h6v1h-6zM17 1h1v1h-1zM19 1h1v1h-1zM22 1h1v1h-1zM26 1h3v1h-3zM30 1h1v1h-1zM36 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h3v1h-3zM12 2h5v1h-5zM19 2h3v1h-3zM24 2h1v1h-1zM26 2h1v1h-1zM28 2h1v1h-1zM30 2h1v1h-1zM32 2h3v1h-3zM36 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM8 3h2v1h-2zM11 3h4v1h-4zM17 3h3v1h-3zM22 3h1v1h-1zM24 3h3v1h-3zM30 3h1v1h-1zM32 3h3v1h-3zM36 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h2v1h-2zM16 4h1v1h-1zM18 4h3v1h-3zM23 4h2v1h-2zM28 4h1v1h-1zM30 4h1v1h-1zM32 4h3v1h-3zM36 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM10 5h3v1h-3zM15 5h1v1h-1zM18 5h1v1h-1zM20 5h1v1h-1zM22 5h1v1h-1zM25 5h1v1h-1zM27 5h2v1h-2zM30 5h1v1h-1zM36 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM24 6h1v1h-1zM26 6h1v1h-1zM28 6h1v1h-1zM30 6h7v1h-7zM8 7h1v1h-1zM15 7h1v1h-1zM23 7h1v1h-1zM27 7h2v1h-2zM0 8h1v1h-1zM2 8h5v1h-5zM11 8h2v1h-2zM15 8h1v1h-1zM18 8h5v1h-5zM24 8h4v1h-4zM30 8h5v1h-5zM0 9h1v1h-1zM2 9h3v1h-3zM10 9h1v1h-1zM15 9h3v1h-3zM21 9h1v1h-1zM28 9h2v1h-2zM31 9h1v1h-1zM33 9h1v1h-1zM35 9h1v1h-1zM0 10h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM6 10h4v1h-4zM11 10h1v1h-1zM17 10h1v1h-1zM20 10h1v1h-1zM22 10h3v1h-3zM26 10h11v1h-11zM1 11h1v1h-1zM9 11h2v1h-2zM16 11h1v1h-1zM21 11h3v1h-3zM30 11h3v1h-3zM36 11h1v1h-1zM1 12h3v1h-3zM5 12h3v1h-3zM10 12h1v1h-1zM12 12h3v1h-3zM17 12h1v1h-1zM22 12h6v1h-6zM29 12h2v1h-2zM32 12h5v1h-5zM0 13h2v1h-2zM9 13h1v1h-1zM11 13h2v1h-2zM14 13h1v1h-1zM16 13h6v1h-6zM23 13h1v1h-1zM25 13h1v1h-1zM28 13h1v1h-1zM31 13h1v1h-1zM1 14h2v1h-2zM5 14h2v1h-2zM10 14h1v1h-1zM12 14h1v1h-1zM15 14h3v1h-3zM21 14h1v1h-1zM24 14h1v1h-1zM27 14h1v1h-1zM30 14h4v1h-4zM35 14h2v1h-2zM0 15h1v1h-1zM3 15h3v1h-3zM7 15h4v1h-4zM13 15h1v1h-1zM15 15h9v1h-9zM26 15h3v1h-3zM31 15h2v1h-2zM35 15h1v1h-1zM0 16h1v1h-1zM3 16h6v1h-6zM10 16h4v1h-4zM16 16h1v1h-1zM19 16h1v1h-1zM21 16h1v1h-1zM23 16h1v1h-1zM25 16h3v1h-3zM29 16h2v1h-2zM32 16h1v1h-1zM34 16h2v1h-2zM0 17h2v1h-2zM4 17h1v1h-1zM10 17h1v1h-1zM15 17h1v1h-1zM18 17h1v1h-1zM20 17h1v1h-1zM22 17h1v1h-1zM24 17h1v1h-1zM28 17h1v1h-1zM31 17h1v1h-1zM35 17h1v1h-1zM4 18h3v1h-3zM9 18h4v1h-4zM15 18h5v1h-5zM21 18h1v1h-1zM25 18h1v1h-1zM27 18h2v1h-2zM30 18h2v1h-2zM35 18h2v1h-2zM0 19h1v1h-1zM3 19h1v1h-1zM7 19h4v1h-4zM15 19h1v1h-1zM19 19h4v1h-4zM24 19h1v1h-1zM26 19h1v1h-1zM29 19h2v1h-2zM32 19h1v1h-1zM36 19h1v1h-1zM2 20h2v1h-2zM5 20h2v1h-2zM9 20h1v1h-1zM12 20h2v1h-2zM15 20h1v1h-1zM17 20h1v1h-1zM19 20h1v1h-1zM22 20h1v1h-1zM24 20h4v1h-4zM29 20h2v1h-2zM32 20h3v1h-3zM0 21h1v1h-1zM2 21h1v1h-1zM4 21h1v1h-1zM7 21h1v1h-1zM9 21h2v1h-2zM12 21h3v1h-3zM16 21h1v1h-1zM19 21h1v1h-1zM22 21h2v1h-2zM25 21h1v1h-1zM28 21h1v1h-1zM33 21h1v1h-1zM35 21h2v1h-2zM0 22h1v1h-1zM2 22h1v1h-1zM4 22h3v1h-3zM11 22h1v1h-1zM14 22h3v1h-3zM18 22h1v1h-1zM22 22h1v1h-1zM25 22h3v1h-3zM30 22h4v1h-4zM35 22h2v1h-2zM0 23h2v1h-2zM3 23h2v1h-2zM7 23h2v1h-2zM10 23h1v1h-1zM13 23h1v1h-1zM16 23h1v1h-1zM19 23h1v1h-1zM28 23h5v1h-5zM1 24h2v1h-2zM4 24h1v1h-1zM6 24h1v1h-1zM9 24h1v1h-1zM14 24h1v1h-1zM18 24h1v1h-1zM20 24h3v1h-3zM24 24h3v1h-3zM28 24h3v1h-3zM32 24h1v1h-1zM34 24h1v1h-1zM36 24h1v1h-1zM0 25h3v1h-3zM4 25h2v1h-2zM7 25h3v1h-3zM13 25h4v1h-4zM21 25h1v1h-1zM28 25h1v1h-1zM31 25h1v1h-1zM33 25h2v1h-2zM0 26h1v1h-1zM2 26h1v1h-1zM4 26h3v1h-3zM10 26h1v1h-1zM12 26h2v1h-2zM20 26h5v1h-5zM26 26h4v1h-4zM32 26h2v1h-2zM35 26h2v1h-2zM0 27h1v1h-1zM2 27h1v1h-1zM4 27h2v1h-2zM7 27h1v1h-1zM9 27h2v1h-2zM12 27h1v1h-1zM16 27h1v1h-1zM21 27h1v1h-1zM23 27h1v1h-1zM26 27h1v1h-1zM28 27h1v1h-1zM31 27h1v1h-1zM35 27h1v1h-1zM0 28h1v1h-1zM3 28h2v1h-2zM6 28h4v1h-4zM12 28h3v1h-3zM17 28h1v1h-1zM22 28h5v1h-5zM28 28h8v1h-8zM8 29h3v1h-3zM12 29h2v1h-2zM16 29h2v1h-2zM19 29h3v1h-3zM23 29h1v1h-1zM27 29h2v1h-2zM32 29h2v1h-2zM35 29h1v1h-1zM0 30h7v1h-7zM9 30h1v1h-1zM11 30h1v1h-1zM13 30h3v1h-3zM17 30h1v1h-1zM20 30h2v1h-2zM25 30h2v1h-2zM28 30h1v1h-1zM30 30h1v1h-1zM32 30h1v1h-1zM34 30h3v1h-3zM0 31h1v1h-1zM6 31h1v1h-1zM8 31h1v1h-1zM10 31h1v1h-1zM13 31h6v1h-6zM20 31h3v1h-3zM26 31h1v1h-1zM28 31h1v1h-1zM32 31h2v1h-2zM35 31h2v1h-2zM0 32h1v1h-1zM2 32h3v1h-3zM6 32h1v1h-1zM8 32h1v1h-1zM12 32h2v1h-2zM15 32h2v1h-2zM21 32h1v1h-1zM23 32h3v1h-3zM27 32h6v1h-6zM34 32h3v1h-3zM0 33h1v1h-1zM2 33h3v1h-3zM6 33h1v1h-1zM8 33h2v1h-2zM15 33h1v1h-1zM18 33h1v1h-1zM20 33h1v1h-1zM22 33h1v1h-1zM24 33h2v1h-2zM29 33h2v1h-2zM32 33h2v1h-2zM35 33h1v1h-1zM0 34h1v1h-1zM2 34h3v1h-3zM6 34h1v1h-1zM8 34h4v1h-4zM14 34h6v1h-6zM21 34h1v1h-1zM25 34h4v1h-4zM36 34h1v1h-1zM0 35h1v1h-1zM6 35h1v1h-1zM13 35h1v1h-1zM15 35h1v1h-1zM19 35h3v1h-3zM23 35h1v1h-1zM26 35h1v1h-1zM29 35h1v1h-1zM32 35h1v1h-1zM36 35h1v1h-1zM0 36h7v1h-7zM8 36h1v1h-1zM11 36h3v1h-3zM15 36h3v1h-3zM19 36h2v1h-2zM22 36h4v1h-4zM30 36h1v1h-1zM32 36h1v1h-1zM34 36h3v1h-3z"/></svg><span>Скоринг посчитает ваши настоящие касания</span></div>
+<div class="m-root" id="mRoot">
+  <div class="m-bar">
+    <div class="m-step" aria-live="polite"><b id="mStep">1 из 2 · Обычный перевод</b><span id="mHint">Нажмите «Мама» в частых переводах</span></div>
+    <button class="m-icon" id="mRestart" type="button" aria-label="Начать сначала"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4.5h4.5"/></svg></button>
+    <button class="m-chip" id="mChip" type="button" aria-label="Что видит антифрод банка"><span class="lg">Банк видит</span><span class="sm">Банк</span><b id="mScore">—</b></button>
+  </div>
+  <div class="screen" id="screen">
+<div class="topbg" aria-hidden="true"></div>
+          
+          
+          <div class="callbar" id="callbar" hidden>
+            <span><span class="dot"></span>«Служба безопасности» · <span id="callClock">00:00</span></span>
+            <span class="countdown" id="countdown" hidden>0:30</span>
+          </div>
+          <div class="bubble" id="bubble" hidden><span class="who"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>Говорит звонящий</span><span id="bubbleText"></span></div>
+
+          <!-- экран «Платежи и переводы» -->
+          <div class="view" id="viewHome">
+            <div class="bar">
+              <h3>Платежи и переводы</h3>
+              <span class="ico" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              </span>
+            </div>
+            <div class="glass-row" aria-hidden="true">
+              <div class="glass"><span class="gi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg></span><span>Мобильная связь<b>649,34 ₽</b></span></div>
+              <div class="glass"><span class="gi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 11l9-7 9 7v9H3z"/></svg></span><span>ЖКУ<b>4 210 ₽</b></span></div>
+              <div class="glass"><span class="gi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M7 3h10v18l-5-3-5 3z"/></svg></span><span>Налоги<b>нет долгов</b></span></div>
+            </div>
+            <div class="sheet-body">
+              <h4>Перевести</h4>
+              <button class="search go-phone" id="goPhone" data-go="phone" type="button">
+                <span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></span>
+                <span class="lbl">Телефон, карта или счёт</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14171F" stroke-width="1.8" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"/></svg>
+              </button>
+              <div class="tiles" aria-hidden="true">
+                <div class="tile"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14171F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-3.5-3.5M19 16H5l3.5 3.5"/></svg></i>Между счетами</div>
+                <div class="tile"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14171F" stroke-width="1.8"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3 10h18"/></svg></i>По номеру карты</div>
+                <div class="tile"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14171F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13M6.5 11.5 12 17l5.5-5.5"/></svg></i>Из другого банка</div>
+                <div class="tile"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14171F" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></i>По реквизитам</div>
+              </div>
+              <h5>Частые переводы</h5>
+              <div class="people">
+                <button class="go" id="goMama" data-go="mama" type="button"><span class="ava b">М</span>Мама</button>
+                <span class="go" aria-hidden="true"><span class="ava g">С</span>Саша</span>
+                <span class="go" aria-hidden="true"><span class="ava p">О</span>Оля</span>
+                <span class="go" aria-hidden="true"><span class="ava n"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg></span>Все</span>
+              </div>
+              <h5>Регулярные платежи</h5>
+              <div class="regular" aria-hidden="true">
+                <i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14171F" stroke-width="1.8"><path d="M4 9a12 12 0 0 1 16 0M7 12.5a7.5 7.5 0 0 1 10 0M10 16a3 3 0 0 1 4 0"/></svg></i>
+                <span>Домашний интернет<small>каждый месяц, 5-го</small></span><b>650 ₽</b>
+              </div>
+            </div>
+            <nav class="tabbar" aria-hidden="true">
+              <span class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 11 12 4l8 7v8.5a.5.5 0 0 1-.5.5H15v-6H9v6H4.5a.5.5 0 0 1-.5-.5z"/></svg>Главная</span>
+              <span class="tab on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-3.5-3.5M19 16H5l3.5 3.5"/></svg>Платежи</span>
+              <span class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.8"/></svg>Продукты</span>
+              <span class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg>История</span>
+              <span class="tab"><span class="bdg">9</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 3.5 6.6L4 20l1.2-3.4A8 8 0 0 1 4 12z"/><path d="M9 12h.01M12 12h.01M15 12h.01" stroke-linecap="round" stroke-width="2.4"/></svg>Чат</span>
+            </nav>
+          </div>
+
+          <!-- экран перевода -->
+          <div class="view" id="viewForm" hidden>
+            <div class="bar form">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+              <div><h3 id="formTitle">Перевод по номеру телефона</h3><small>Через СБП · без комиссии</small></div>
+            </div>
+            <div class="sheet-body">
+              <div class="card tap" id="recCard" data-k="field-rec"></div>
+              <div class="card tap" id="amtCard" data-k="field-amt">
+                <div class="label">Сумма</div>
+                <div class="amount" id="amount">0 ₽</div>
+                <div class="label">С Мастер-счёта · доступно 182 340 ₽</div>
+              </div>
+              <div class="keypad" id="keypad">
+                <button class="key tap" data-k="1" type="button">1</button>
+                <button class="key tap" data-k="2" type="button">2</button>
+                <button class="key tap" data-k="3" type="button">3</button>
+                <button class="key tap" data-k="4" type="button">4</button>
+                <button class="key tap" data-k="5" type="button">5</button>
+                <button class="key tap" data-k="6" type="button">6</button>
+                <button class="key tap" data-k="7" type="button">7</button>
+                <button class="key tap" data-k="8" type="button">8</button>
+                <button class="key tap" data-k="9" type="button">9</button>
+                <span class="key blank" aria-hidden="true"></span>
+                <button class="key tap" data-k="0" type="button">0</button>
+                <button class="key tap" data-k="del" type="button" aria-label="Стереть"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" style="margin:auto"><path d="M8.5 5H20a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8.5L3 12z"/><path d="M11.5 9.5l5 5M16.5 9.5l-5 5"/></svg></button>
+              </div>
+              <div class="spacer"></div>
+              <button class="send tap" id="send" data-k="send" type="button">Перевести</button>
+            </div>
+          </div>
+
+          <div class="taps" id="taps" aria-hidden="true"></div>
+          <div class="finger" id="finger" hidden></div>
+          <div class="incoming" id="incoming" hidden>
+            <div>
+              <div class="ring-ico" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="#fff"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></div>
+              <p class="caller">Служба безопасности</p>
+              <p class="caller-sub" id="callerSub">Неизвестный номер · входящий вызов</p>
+            </div>
+            <div class="call-actions">
+              <div><button class="round decline" id="decline" type="button" aria-label="Отклонить"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="round-lbl">Отклонить</span></div>
+              <div><button class="round accept" id="accept" type="button" aria-label="Принять"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><span class="round-lbl">Принять</span></div>
+            </div>
+          </div>
+          <div class="backdrop" id="backdrop" hidden></div>
+          <div class="sheet" id="sheet" hidden></div>
+          <div class="stop" id="stop" hidden></div>
+  </div>
+
+  <div class="m-inter" id="mInter" hidden>
+    <div class="ring" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="#fff"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></div>
+    <h2>Прошла неделя</h2>
+    <p id="mInterText"></p>
+    <button class="btn white" id="mNext" type="button">Дальше</button>
+  </div>
+
+  <div class="m-bank" id="mBank" hidden>
+    <div class="m-bank-h">
+      <div><b>Что видит антифрод банка</b><small>Клиент этого не видит — только меру, которую выбрал скоринг</small></div>
+      <button class="m-close" id="mClose" type="button" aria-label="Закрыть"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="m-bank-body" id="mBankBody">
+<div class="box wide">
+        <div class="box-h"><h2>Риск-балл операции</h2><span class="ctx" id="ctx">Пример</span></div>
+        <div class="score-grid">
+          <div class="score-num"><span id="scoreNum">0</span><small>/ 100</small></div>
+          <span class="verdict idle" id="verdict">Ждём перевода</span>
+          <div class="scale-wrap">
+            <div class="scale"><span></span><span></span><span></span></div>
+            <div class="marker" id="marker"></div>
+            <span class="tick" style="left:0">0</span><span class="tick" style="left:30%">30</span><span class="tick" style="left:60%">60</span><span class="tick end" style="left:100%">100</span>
+          </div>
+          <div class="zones"><span>до 30 — пропуск</span><span>30–59 — предупреждение</span><span>от 60 — приостановка</span></div>
+          <div class="compare" id="compare" hidden></div>
+          <div class="rules">
+            <div class="rules-t"><b>12 признаков ЦБ (ОД-2506) — проверяет банк</b><span>На каждом переводе, у себя на сервере: база мошенников ЦБ, стоп-листы, данные операторов связи, история счёта. В телефоне этих данных нет. Сработал любой — приостановка по закону, без баллов.</span></div>
+            <div class="cells" id="cells"></div>
+            <span class="chip norm" id="rulesChip">ждём перевода</span>
+            <p class="rules-note" id="rulesNote" hidden></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="box-h"><h2>Из чего сложился балл</h2></div>
+        <div class="rows" id="rows"></div>
+      </div>
+
+      <div class="box">
+        <div class="box-h"><h2>Касания</h2></div>
+        <div class="charts">
+          <div class="target-row">
+            <div id="target"></div>
+            <div>
+              <p class="sub-h">Куда попадает палец</p>
+              <p id="targetText">Точка — касание относительно центра кнопки. Круг — край кнопки.</p>
+            </div>
+          </div>
+          <div>
+            <p class="sub-h">Ритм нажатий</p>
+            <div id="rhythm"></div>
+          </div>
+          <div class="legend"><span><span class="sw base"></span>обычная сессия (профиль)</span><span><span class="sw cur"></span>текущий перевод</span></div>
+        </div>
+      </div>
+
+      <div class="box wide">
+        <div class="box-h"><h2>Профиль клиента и признаки сессии</h2></div>
+        <div class="prof-row"><div class="sess" id="sess" aria-hidden="true"></div><p class="prof" id="prof"></p></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Признак</th><th>Профиль</th><th>Сейчас</th><th>Отклонение</th></tr></thead>
+          <tbody id="sigBody"></tbody>
+        </table></div>
+        <p class="tbl-note">SDK считает на устройстве только агрегаты: около 2 КБ на сессию. Сырые касания не хранятся.</p>
+      </div>
+
+      <div class="box">
+        <div class="box-h"><h2>Как устроен модуль</h2></div>
+        <ol class="m-pipe">
+          <li><b>SDK в ВТБ Онлайн</b><span>касания, экраны, флаг звонка</span></li>
+          <li><b>Признаки сессии</b><span>около 2 КБ агрегатов на сессию</span></li>
+          <li><b>Профиль клиента</b><span>медиана и разброс по 10 обычным сессиям</span></li>
+          <li><b>Поведенческий модуль</b><span>балл отклонения и флаг диктовки</span></li>
+          <li><b>Балльный скоринг</b><span>плюс получатель, сумма, устройство</span></li>
+          <li><b>Мера по порогам</b><span>до 30 · 30–59 · от 60</span></li>
+        </ol>
+        <p class="tbl-note">Веса и пороги стартовые и экспертные, как в концепции: в пилоте их подбирают на истории операций, потом заменяют моделью. Скоринг ничего не блокирует сам: он даёт сигнал в общий скоринг риска, а обязательные меры 161-ФЗ работают независимо.</p>
+      </div>
+      <div class="m-actions">
+        <button class="btn primary" id="mAgain" type="button">Пройти ещё раз</button>
+        <button class="btn" id="mAuto2" type="button">Смотреть автодемо</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="m-intro" id="mIntro">
+    <span class="badge">Концепт для ВТБ Онлайн · кейс «Деньги под защитой»</span>
+    <h1>Поведенческий скоринг</h1>
+    <p>Телефон на пару минут станет приложением банка. Скоринг считает ваши настоящие касания.</p>
+    <ol class="m-list">
+      <li><i>1</i><span>Обычный перевод маме — банк запомнит, как вы пользуетесь приложением.</span></li>
+      <li><i>2</i><span>Звонок «службы безопасности»: номер и сумму диктуют и торопят.</span></li>
+      <li><i>3</i><span>Что увидел банк и почему остановил перевод.</span></li>
+    </ol>
+    <div class="m-grow"></div>
+    <div class="m-btns">
+      <button class="btn white" id="mStart" type="button">Пройти самому</button>
+      <button class="btn ghost" id="mAuto" type="button">Смотреть автодемо · 30 секунд</button>
+    </div>
+    <p class="m-note">Концепт-прототип в стиле ВТБ Онлайн: деньги не переводятся, касания не покидают устройство.</p>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const PLAY_HTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>Демо за 30 секунд';
+  const STOP_HTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2.5"/></svg>Остановить';
+
+  /* ---------- параметры скоринга (как в концепции) ---------- */
+  const LAST5_SUM = 1200 + 3500 + 800 + 2000 + 1500;          // последние пять переводов клиента
+  const W = { dict: 15, newRec: 15, share: 15, device: 20 };   // баллы контекстных сигналов
+  const SCAM_NUMBER = '9165550447';
+  const DEFAULT_PROFILE = {
+    off: { m: 26, s: 8 }, dur: { m: 100, s: 25 }, tempo: { m: 430, s: 100 },
+    cv: { m: 0.22, s: 0.09 }, pauses: { m: 0.2, s: 0.6 }, source: 'default'
+  };
+
+  /* ---------- математика ---------- */
+  const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
+  const median = a => { const b = [...a].sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+  const std = a => { const m = mean(a); return Math.sqrt(mean(a.map(x => (x - m) ** 2))); };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function features(taps) {
+    if (taps.length < 4) return null;
+    const off = mean(taps.map(t => Math.min(1.5, Math.hypot(t.ox, t.oy)))) * 100;
+    const dur = median(taps.map(t => t.dur));
+    const keys = taps.filter(t => t.kind === 'key');
+    const iv = [];
+    for (let i = 1; i < keys.length; i++) iv.push(keys[i].t - keys[i - 1].t);
+    const fast = iv.filter(x => x <= 1500);
+    const pauses = iv.length - fast.length;
+    const tempo = fast.length ? median(fast) : (iv.length ? median(iv) : 0);
+    const cv = fast.length >= 2 ? std(fast) / mean(fast) : 0;
+    return { n: taps.length, off, dur, tempo, cv, pauses };
+  }
+  function profileFrom(f) {
+    const tempo = f.tempo || 430;
+    return {
+      off: { m: f.off, s: Math.max(6, f.off * 0.3) }, dur: { m: f.dur, s: Math.max(20, f.dur * 0.25) },
+      tempo: { m: tempo, s: Math.max(80, tempo * 0.25) }, cv: { m: f.cv, s: Math.max(0.08, f.cv * 0.35) },
+      pauses: { m: f.pauses, s: 0.6 }, source: 'user'
+    };
+  }
+  function zScores(f, p) {
+    return {
+      off: (f.off - p.off.m) / p.off.s,                        // точность хуже обычного
+      dur: Math.abs(f.dur - p.dur.m) / p.dur.s,                // нажатия длиннее или короче обычного
+      tempo: f.tempo ? Math.abs(f.tempo - p.tempo.m) / p.tempo.s : 0,
+      cv: (f.cv - p.cv.m) / p.cv.s,                            // ритм неровнее обычного
+      pauses: (f.pauses - p.pauses.m) / p.pauses.s             // больше пауз — слушает диктовку
+    };
+  }
+  function behaviorPts(z) {
+    const raw = Object.values(z).reduce((s, v) => s + Math.max(0, v - 1), 0);
+    return raw < 1.6 ? 0 : Math.min(25, Math.round(10 + (raw - 1.6) * 3));
+  }
+  const decide = s => s >= 60 ? 'bad' : (s >= 30 ? 'warn' : 'ok');
+  function score(sess, profile) {
+    const f = features(sess.taps);
+    const z = f ? zScores(f, profile) : null;
+    const behavior = z ? behaviorPts(z) : 0;
+    const amount = +sess.amount || 0;
+    const dict = (sess.call || (f && f.pauses >= 2)) ? W.dict : 0;
+    const newRec = (sess.kind === 'scam' && sess.recipient.length === 10) ? W.newRec : 0;
+    const share = amount > 0 && amount / (amount + LAST5_SUM) > 0.5 ? W.share : 0;
+    const device = 0;
+    const total = behavior + dict + newRec + share + device;
+    const without = newRec + share + device;
+    return { f, z, parts: { behavior, dict, newRec, share, device }, total, without, decision: decide(total), decisionWithout: decide(without) };
+  }
+
+  /* ---------- сценарии для автодемо: [клавиша, пауза до нажатия мс, смещение x, смещение y, длительность мс] ---------- */
+  const CALM = [['1', 0, .18, -.12, 96], ['5', 470, -.2, .14, 104], ['0', 430, .14, .2, 92], ['0', 480, -.1, -.18, 99], ['send', 950, .06, .1, 108]];
+  const SCAM_NUM = [['9', 0, .4, -.28, 168], ['1', 180, -.46, .22, 182], ['6', 330, .33, .41, 150], ['5', 1850, -.26, -.47, 176], ['5', 160, .53, .14, 158],
+    ['5', 360, -.36, .39, 190], ['0', 1700, .44, -.35, 165], ['4', 150, -.5, -.15, 172], ['4', 300, .3, .48, 160], ['7', 210, -.39, .33, 185]];
+  const SCAM_AMT = [['1', 0, .47, .26, 170], ['8', 170, -.41, -.3, 178], ['0', 310, .36, .44, 155], ['0', 1600, -.53, .19, 182],
+    ['0', 160, .27, -.5, 168], ['0', 280, -.33, .38, 174], ['send', 650, .22, -.41, 190]];
+
+  function synth(script, startT = 0) {
+    let t = startT; const out = [];
+    for (const [k, gap, ox, oy, dur] of script) { t += gap; out.push({ t, dur, ox, oy, kind: k === 'send' ? 'send' : 'key' }); }
+    return out;
+  }
+  function exampleData() {
+    const calmTaps = synth(CALM);
+    const calmF = features(calmTaps);
+    const prof = profileFrom(calmF);
+    const numTaps = synth(SCAM_NUM, 2600);
+    const amtTaps = synth(SCAM_AMT, numTaps[numTaps.length - 1].t + 2100);
+    const sess = { kind: 'scam', taps: numTaps.concat(amtTaps), recipient: SCAM_NUMBER, amount: '180000', call: true };
+    return { calmTaps, calmF, prof, sess, r: score(sess, prof) };
+  }
+
+  /* ---------- состояние ---------- */
+  // phase: home → form → result; на шаге 2: call-incoming → home (в звонке) → form → result
+  const state = {
+    step: 1, phase: 'home', view: 'home', session: null, profile: DEFAULT_PROFILE, profileSessions: 9,
+    calm: null, example: true, auto: false, autoToken: 0, activeField: 'amt',
+    callStart: 0, countdownEnd: 0, timers: [], last: null
+  };
+  const newSession = kind => ({ kind, taps: [], t0: null, recipient: '', amount: '', call: false });
+
+  /* ---------- форматирование ---------- */
+  const fmtMoney = n => n.toLocaleString('ru-RU') + ' ₽';
+  const fmtPhone = d => { const p = d.padEnd(10, '_'); return `+7 ${p.slice(0, 3)} ${p.slice(3, 6)}-${p.slice(6, 8)}-${p.slice(8, 10)}`; };
+  const fmt1 = v => v.toLocaleString('ru-RU', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+  const fmt2 = v => v.toLocaleString('ru-RU', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  const fmt0 = v => Math.round(v).toLocaleString('ru-RU');
+
+  /* ---------- таймеры ---------- */
+  const later = (ms, fn) => { const id = setTimeout(fn, ms); state.timers.push(id); return id; };
+  let clockId = null;
+  function clearTimers() { state.timers.forEach(clearTimeout); state.timers = []; if (clockId) { clearInterval(clockId); clockId = null; } }
+
+  /* ---------- приложение в телефоне ---------- */
+  const screen = $('#screen');
+  function renderApp() {
+    const s = state.session;
+    $('#viewHome').hidden = state.view !== 'home';
+    $('#viewForm').hidden = state.view !== 'form';
+    const rec = $('#recCard');
+    if (s.kind === 'calm') {
+      rec.innerHTML = '<div class="contact"><span class="ava b">М</span><div style="flex:1;min-width:0"><div class="row-between"><span class="value">Мама</span><span class="tag known">частый получатель</span></div><div class="label">+7 9•• •••-12-34 · Мама Б.</div></div></div>';
+      rec.classList.remove('active');
+      rec.removeAttribute('tabindex'); rec.removeAttribute('role');
+    } else {
+      rec.innerHTML = `<div class="row-between"><span class="label">Номер получателя</span><span class="tag new"${s.recipient.length ? '' : ' style="visibility:hidden"'}>новый получатель</span></div><div class="value">${fmtPhone(s.recipient)}</div>`;
+      rec.classList.toggle('active', state.activeField === 'rec');
+      rec.setAttribute('tabindex', '0'); rec.setAttribute('role', 'button');
+    }
+    $('#amtCard').classList.toggle('active', s.kind === 'calm' || state.activeField === 'amt');
+    $('#amtCard').setAttribute('tabindex', '0'); $('#amtCard').setAttribute('role', 'button');
+    $('#amount').textContent = fmtMoney(+s.amount || 0);
+    const inCall = s.call && state.phase !== 'call-incoming';
+    $('#callbar').hidden = !inCall;
+    $('#bubble').hidden = !inCall;
+    screen.classList.toggle('incall', inCall);
+  }
+  function setBubble(html) { $('#bubbleText').innerHTML = html; }
+  function flash(sel) { const el = $(sel); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+
+  function tapDotAt(x, y) {
+    const d = document.createElement('div');
+    d.className = 'tapdot'; d.style.left = x + 'px'; d.style.top = y + 'px';
+    $('#taps').appendChild(d);
+    setTimeout(() => d.remove(), 1700);
+  }
+  function screenPoint(el, ox, oy) {
+    const r = el.getBoundingClientRect(), sr = screen.getBoundingClientRect();
+    return { x: r.left - sr.left + r.width / 2 * (1 + ox), y: r.top - sr.top + r.height / 2 * (1 + oy) };
+  }
+
+  /* ---------- навигация в приложении ---------- */
+  function openForm() {
+    state.view = 'form'; state.phase = 'form'; state.example = false;
+    if (state.session.kind === 'scam') { state.activeField = 'rec'; setBubble(LINES.number); }
+    renderApp();
+    renderPanel(score(state.session, state.profile), 'live');
+    updateGuide();
+  }
+  screen.addEventListener('click', e => {
+    const g = e.target.closest('[data-go]');
+    if (!g || state.auto || state.phase !== 'home') return;
+    const want = state.session.kind === 'calm' ? 'mama' : 'phone';
+    if (g.dataset.go !== want) { flash(want === 'mama' ? '#goMama' : '#goPhone'); return; }
+    openForm();
+  });
+
+  /* ---------- касания ---------- */
+  function registerTap(el, ox, oy, tStart, dur) {
+    const s = state.session;
+    if (!s || state.phase !== 'form') return;
+    const a = el.dataset.k;
+    const kind = a === 'send' ? 'send' : (/^\d$|^del$/.test(a) ? 'key' : 'ui');
+    if (kind !== 'ui') {
+      if (s.t0 === null) s.t0 = tStart;
+      s.taps.push({ t: tStart - s.t0, dur, ox: clamp(ox, -1.5, 1.5), oy: clamp(oy, -1.5, 1.5), kind });
+      pulsePipe([0, 1]);
+    }
+    if (state.example) state.example = false;
+    doAction(a);
+  }
+  function doAction(a) {
+    const s = state.session;
+    if (/^\d$/.test(a)) {
+      if (s.kind === 'scam' && state.activeField === 'rec') {
+        if (s.recipient.length < 10) {
+          s.recipient += a;
+          if (s.recipient.length === 10) { state.activeField = 'amt'; onRecipientDone(); }
+        }
+      } else if (s.amount.length < 7 && !(s.amount === '' && a === '0')) s.amount += a;
+    } else if (a === 'del') {
+      if (s.kind === 'scam' && (state.activeField === 'rec' || s.amount === '')) { state.activeField = 'rec'; s.recipient = s.recipient.slice(0, -1); }
+      else s.amount = s.amount.slice(0, -1);
+    } else if (a === 'field-rec') { if (s.kind === 'scam') state.activeField = 'rec'; }
+    else if (a === 'field-amt') { state.activeField = 'amt'; }
+    else if (a === 'send') { submit(); return; }
+    renderApp();
+    renderPanel(score(s, state.profile), 'live');
+  }
+
+  const pending = new Map();
+  screen.addEventListener('pointerdown', e => {
+    const el = e.target.closest('.tap');
+    if (!el || state.auto || state.phase !== 'form') return;
+    pending.set(e.pointerId, { el, x: e.clientX, y: e.clientY, t: performance.now() });
+    el.classList.add('pressed');
+    const sr = screen.getBoundingClientRect();
+    tapDotAt(e.clientX - sr.left, e.clientY - sr.top);
+  });
+  window.addEventListener('pointerup', e => {
+    const p = pending.get(e.pointerId);
+    if (!p) return;
+    pending.delete(e.pointerId);
+    p.el.classList.remove('pressed');
+    const r = p.el.getBoundingClientRect();
+    const ox = (p.x - (r.left + r.width / 2)) / (r.width / 2);
+    const oy = (p.y - (r.top + r.height / 2)) / (r.height / 2);
+    registerTap(p.el, ox, oy, p.t, Math.min(performance.now() - p.t, 1500));
+  });
+  window.addEventListener('pointercancel', e => { const p = pending.get(e.pointerId); if (p) { p.el.classList.remove('pressed'); pending.delete(e.pointerId); } });
+  screen.addEventListener('click', e => {           // ввод с клавиатуры (Enter / пробел на кнопке)
+    const el = e.target.closest('.tap');
+    if (el && e.detail === 0 && !state.auto) registerTap(el, 0, 0, performance.now(), 100);
+  });
+  screen.addEventListener('keydown', e => {
+    const el = e.target.closest('.card.tap');
+    if (el && (e.key === 'Enter' || e.key === ' ') && !state.auto) { e.preventDefault(); registerTap(el, 0, 0, performance.now(), 100); }
+  });
+
+  /* ---------- шаг 2: звонок ---------- */
+  const LINES = {
+    hello: 'Служба безопасности банка. С вашего счёта пытаются списать деньги, их нужно срочно перевести на резервный счёт.',
+    open: 'Откройте в приложении перевод по номеру телефона. Я продиктую номер.',
+    number: 'Записывайте номер: <span class="digits">916 555-04-47</span>',
+    amount: 'Сумма — всё, что есть: <span class="digits">180 000</span>. Быстрее, у вас 30 секунд!',
+    late: 'Время вышло! Деньги сейчас спишут, переводите немедленно!'
+  };
+  function startStep2() {
+    clearTimers(); closeSheet(true);
+    state.step = 2; state.phase = 'call-incoming'; state.view = 'home';
+    state.session = newSession('scam'); state.session.call = true; state.activeField = 'rec';
+    $('#callerSub').textContent = 'Неизвестный номер · входящий вызов';
+    $('#incoming').hidden = false;
+    renderApp(); renderPanel(score(newSession('scam'), state.profile), 'wait'); updateGuide();
+  }
+  function acceptCall() {
+    if (state.phase !== 'call-incoming') return;
+    $('#incoming').hidden = true;
+    state.phase = 'home'; state.callStart = performance.now();
+    setBubble(LINES.hello);
+    later(2400, () => { if (state.phase === 'home') setBubble(LINES.open); });
+    clockId = setInterval(tickClock, 250);
+    renderApp(); updateGuide();
+  }
+  function declineCall() {
+    if (state.phase !== 'call-incoming') return;
+    $('#callerSub').textContent = 'В жизни так и надо. Для демо примем звонок…';
+    later(1500, acceptCall);
+  }
+  function onRecipientDone() {
+    setBubble(LINES.amount);
+    state.countdownEnd = performance.now() + 30000;
+    $('#countdown').hidden = false;
+  }
+  function tickClock() {
+    const sec = Math.floor((performance.now() - state.callStart) / 1000);
+    $('#callClock').textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    if (state.countdownEnd) {
+      const left = Math.max(0, Math.ceil((state.countdownEnd - performance.now()) / 1000));
+      const cd = $('#countdown');
+      cd.textContent = `0:${String(left).padStart(2, '0')}`;
+      cd.classList.toggle('hot', left <= 10);
+      if (left === 0 && state.phase === 'form' && !cd.dataset.late) { cd.dataset.late = '1'; setBubble(LINES.late); }
+    }
+  }
+
+  /* ---------- перевод ---------- */
+  function submit() {
+    const s = state.session;
+    if (s.kind === 'scam' && s.recipient.length < 10) { flash('#recCard'); return; }
+    if (!(+s.amount > 0)) { flash('#amtCard'); return; }
+    const r = score(s, state.profile);
+    state.phase = 'result';
+    state.countdownEnd = 0; $('#countdown').hidden = true;
+    renderPanel(r, s.kind === 'calm' ? 'calm' : 'scam');
+    runPipe();
+    showMeasure(r, s);
+    if (s.kind === 'calm') {
+      state.calm = { taps: s.taps.slice(), f: r.f };
+      if (r.f) state.profile = profileFrom(r.f);
+      state.profileSessions = 10;
+      renderSessions(true);
+    }
+    state.last = r;
+    updateGuide();
+  }
+  const ICONS = {
+    ok: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    warn: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 6v8M12 18.5v.01"/></svg>',
+    shield: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M10 9.5v5M14 9.5v5"/></svg>'
+  };
+  // защита от «призрачного» клика: на сенсорном экране клик после отпускания «Перевести» попадает в кнопку появившегося экрана меры
+  let measureAt = 0;
+  function measureBtn() { if (performance.now() - measureAt < 500) return; onMeasureButton(); }
+  function showMeasure(r, s) {
+    measureAt = performance.now();
+    const amt = fmtMoney(+s.amount);
+    const btn = (t, main) => `<button type="button" class="${main ? 'main' : ''}">${t}</button>`;
+    if (r.decision === 'bad') {
+      const st = $('#stop');
+      st.innerHTML = `<div class="stop-top"><div class="s-ico">${ICONS.shield}</div><h3>Перевод приостановлен</h3><p>${amt} остались на вашем счёте</p></div>
+        <div class="stop-body">
+          ${s.call ? '<div class="alert"><span class="dot"></span><span><b>Сейчас идёт звонок с неизвестного номера</b>Положите трубку. Банк никогда не просит переводить деньги на «резервный» счёт.</span></div>' : ''}
+          <div class="tip"><i>1</i><span>Сотрудник банка перезвонит в течение 15 минут с официального номера с обратной стороны карты.</span></div>
+          <div class="tip"><i>2</i><span>Если перевод нужен вам самим — подтвердите его в этом звонке.</span></div>
+          <div class="tip"><i>3</i><span>Никому не называйте коды из СМС и пуш-уведомлений, даже «сотрудникам банка».</span></div>
+          <div class="spacer"></div>
+          ${btn('Написать в чат банка', true)}${btn('Понятно', false)}
+        </div>`;
+      st.querySelectorAll('button').forEach(b => b.addEventListener('click', measureBtn));
+      st.hidden = false;
+      return;
+    }
+    const map = {
+      ok: { ico: ICONS.ok, title: 'Перевод выполнен', text: `<span class="sum">${amt}</span><br>Маме · +7 9•• •••-12-34`, btns: btn('На главную', true) },
+      warn: { ico: ICONS.warn, title: 'Проверьте перевод', text: 'Похоже, вас торопят. Банк никогда не просит переводить деньги на «резервный» или «безопасный» счёт. Если вам сейчас звонят — положите трубку.', btns: btn('Отменить перевод', true) + btn('Всё равно перевести', false) }
+    }[r.decision];
+    const sh = $('#sheet');
+    sh.innerHTML = `<div class="s-ico ${r.decision}">${map.ico}</div><h3>${map.title}</h3><p>${map.text}</p><div class="sheet-btns">${map.btns}</div>`;
+    sh.querySelectorAll('button').forEach(b => b.addEventListener('click', measureBtn));
+    $('#backdrop').hidden = false; sh.hidden = false;
+  }
+  function closeSheet(silent) {
+    $('#sheet').hidden = true; $('#backdrop').hidden = true; $('#stop').hidden = true;
+    if (!silent) updateGuide();
+  }
+
+  /* ---------- панель антифрода ---------- */
+  let shownScore = 0;
+  function animateScore(to) {
+    const el = $('#scoreNum'), from = shownScore; shownScore = to;
+    if (reduced || from === to) { el.textContent = to; return; }
+    const t0 = performance.now(), d = 450;
+    const f = t => { const k = Math.min(1, (t - t0) / d); el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(f); };
+    requestAnimationFrame(f);
+  }
+  const VERDICT = { ok: 'Пропуск', warn: 'Предупреждение и подтверждение', bad: 'Приостановка и звонок банка' };
+  const SHORT = { ok: 'пропуск', warn: 'предупреждение', bad: 'приостановка' };
+
+  function renderSessions(animateNew) {
+    const n = state.example ? 10 : state.profileSessions;
+    $('#sess').innerHTML = Array.from({ length: 10 }, (_, i) => `<span class="${i < n ? 'f' : ''}${animateNew && i === 9 ? ' new' : ''}"></span>`).join('');
+  }
+  function renderRules(done, scamDecision) {
+    $('#cells').className = 'cells' + (done ? ' scan' : '');
+    $('#cells').innerHTML = Array.from({ length: 12 }, (_, i) => `<span>${i + 1}</span>`).join('');
+    const c = $('#rulesChip');
+    c.className = 'chip ' + (done ? 'okc' : 'norm');
+    c.textContent = done ? 'проверены все 12 · сработало 0' : 'ждём перевода';
+    const note = $('#rulesNote');
+    note.hidden = !(done && scamDecision);
+    if (!note.hidden) note.innerHTML = '<b>Здесь не сработал ни один:</b> номер мошенника новый, в базах его ещё нет. ' +
+      (scamDecision === 'bad' ? 'Перевод остановил поведенческий скоринг.' : scamDecision === 'warn' ? 'Предупреждение выдал балльный скоринг: звонок во время перевода, новый получатель, крупная сумма.' : 'Решение — за балльным скорингом.');
+  }
+
+  function renderPanel(r, mode) {
+    const ctx = { example: 'Пример: перевод под диктовку', wait: `Шаг ${state.step} · ждём перевода`, live: state.step === 1 ? 'Шаг 1 · идёт ввод' : 'Шаг 2 · идёт ввод', calm: 'Шаг 1 · обычный перевод', scam: 'Шаг 2 · перевод под диктовку' }[mode];
+    $('#ctx').textContent = ctx;
+    const final = mode === 'example' || mode === 'calm' || mode === 'scam';
+    const started = final || r.f || r.total > 0;
+    animateScore(r.total);
+    $('#marker').style.left = Math.min(100, r.total) + '%';
+    const v = $('#verdict');
+    if (started) { v.className = 'verdict ' + r.decision; v.textContent = VERDICT[r.decision]; }
+    else { v.className = 'verdict idle'; v.textContent = 'Ждём перевода'; }
+
+    const isScam = mode === 'example' || state.step === 2;
+    const cmp = $('#compare');
+    cmp.hidden = !isScam || !started;
+    if (isScam && started) cmp.innerHTML =
+      `<div class="cmp"><div class="k">Без поведенческого модуля</div><div class="v">${r.without} · ${SHORT[r.decisionWithout]}<small>${r.decisionWithout === 'warn' ? 'подтверждение в приложении продиктует мошенник' : 'только получатель, сумма и устройство'}</small></div></div>` +
+      `<div class="cmp with"><div class="k">С поведенческим модулем</div><div class="v">${r.total} · ${SHORT[r.decision]}<small>${r.decision === 'bad' ? 'деньги остаются на счёте, банк перезванивает' : 'поведение и признаки диктовки в балле'}</small></div></div>`;
+
+    const p = r.parts;
+    const rows = [
+      ['Поведение: отклонение от профиля', 'точность, длительность и темп касаний, паузы', p.behavior, '+10…+25'],
+      ['Признаки диктовки', 'звонок во время перевода, паузы между цифрами', p.dict, '+15'],
+      ['Новый получатель', 'номера нет в истории переводов', p.newRec, '+15'],
+      ['Крупная сумма', 'больше половины от суммы с последними пятью переводами', p.share, '+15'],
+      ['Новое устройство', 'вход с незнакомого телефона', p.device, '+20']
+    ];
+    $('#rows').innerHTML = rows.map(([t, sub, pts, max]) =>
+      `<div class="brow ${pts ? 'hit' : 'zero'}"><div><span class="t">${t}</span><small>${sub}</small></div><div class="pts">${pts ? '+' + pts : '0'}<i>макс. ${max}</i></div></div>`).join('') +
+      `<div class="brow total"><div>Итого</div><div class="pts">${r.total}</div></div>`;
+    renderRules(final, final && isScam ? r.decision : null);
+
+    const ex = mode === 'example' ? EX : null;
+    const prof = ex ? ex.prof : (mode === 'calm' ? DEFAULT_PROFILE : state.profile);
+    const baseTaps = ex ? ex.calmTaps : (state.calm && mode !== 'calm' ? state.calm.taps : DEFAULT_DOTS);
+    const curTaps = ex ? ex.sess.taps : state.session.taps;
+    renderTarget(baseTaps, curTaps, r.f);
+    renderRhythm(ex ? ex.calmTaps : (state.calm && mode !== 'calm' ? state.calm.taps : null), curTaps);
+    renderSignals(r, prof, ex ? true : (mode === 'wait' ? false : !!state.session.call));
+    const src = mode === 'calm'
+      ? 'Перевод сравнили с типовым профилем и засчитали: теперь профиль <b>10 из 10 сессий</b> и построен по вашим касаниям.'
+      : (ex || prof.source === 'user')
+        ? 'Профиль готов: <b>10 из 10 сессий</b>. В демо он построен по обычному переводу, в жизни — по 10 сессиям в приложении.'
+        : `Профиль: <b>${state.profileSessions} из 10 сессий</b>, пока типовой. Обычный перевод на шаге 1 дособерёт его под клиента.`;
+    $('#prof').innerHTML = src;
+    renderSessions(false);
+    updateChip(r, started);
+  }
+
+  function renderSignals(r, p, call) {
+    const f = r.f, z = r.z;
+    const lvl = v => v < 1.5 ? ['norm', 'в норме'] : (v < 3 ? ['mid', 'заметное'] : ['high', 'сильное']);
+    const rows = [
+      ['Смещение от центра кнопки', fmt0(p.off.m) + '\u00a0%', f ? fmt0(f.off) + '\u00a0%' : '—', z && z.off],
+      ['Длительность нажатия', fmt0(p.dur.m) + '\u00a0мс', f ? fmt0(f.dur) + '\u00a0мс' : '—', z && z.dur],
+      ['Интервал между нажатиями', fmt0(p.tempo.m) + '\u00a0мс', f && f.tempo ? fmt0(f.tempo) + '\u00a0мс' : '—', z && z.tempo],
+      ['Неровность ритма', fmt2(p.cv.m), f ? fmt2(f.cv) : '—', z && z.cv],
+      ['Паузы дольше 1,5 с', fmt0(p.pauses.m), f ? String(f.pauses) : '—', z && z.pauses]
+    ];
+    let h = rows.map(([name, pv, cv, zv]) => {
+      let cell = '<span class="chip norm">мало касаний</span>';
+      if (zv !== null && zv !== undefined) { const [c, t] = lvl(zv); cell = `<span class="chip ${c}">${t}</span><span class="zv">${fmt1(Math.max(0, zv))}σ</span>`; }
+      return `<tr><td>${name}</td><td class="n">${pv}</td><td class="n">${cv}</td><td class="z">${cell}</td></tr>`;
+    }).join('');
+    h += `<tr><td>Звонок во время перевода</td><td class="n">нет</td><td class="n">${call ? 'да' : 'нет'}</td><td class="z">${call ? '<span class="chip high">признак диктовки</span>' : '<span class="chip norm">нет</span>'}</td></tr>`;
+    $('#sigBody').innerHTML = h;
+  }
+
+  function renderTarget(baseTaps, curTaps, f) {
+    const S = 150, C = 75, R = 58, k = R;
+    const dot = (t, cls, rad) => `<circle class="${cls}" cx="${(C + clamp(t.ox, -1.25, 1.25) * k).toFixed(1)}" cy="${(C + clamp(t.oy, -1.25, 1.25) * k).toFixed(1)}" r="${rad}"/>`;
+    let h = `<svg class="chart" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" role="img" aria-label="Касания относительно центра кнопки">`;
+    h += `<line class="c-axis" x1="${C - R - 8}" y1="${C}" x2="${C + R + 8}" y2="${C}"/><line class="c-axis" x1="${C}" y1="${C - R - 8}" x2="${C}" y2="${C + R + 8}"/>`;
+    h += `<circle class="c-ring" cx="${C}" cy="${C}" r="${R}"/><circle class="c-ring half" cx="${C}" cy="${C}" r="${R / 2}"/>`;
+    h += `<text x="${C + 3}" y="${C - R / 2 - 3}">50%</text><text x="${C + 3}" y="${C - R - 3}">край</text>`;
+    h += baseTaps.map(t => dot(t, 'c-base', 3)).join('');
+    h += curTaps.map(t => dot(t, 'c-cur', 3.6)).join('');
+    h += '</svg>';
+    $('#target').innerHTML = h;
+    $('#targetText').innerHTML = f
+      ? `Среднее смещение сейчас <b>${fmt0(f.off)}&nbsp;%</b> от центра. Точка — касание относительно центра кнопки, круг — её край.`
+      : 'Точка — касание относительно центра кнопки, круг — её край. Начните вводить сумму.';
+  }
+
+  function renderRhythm(baseTaps, curTaps) {
+    const Wd = 360, H = 82, x0 = 62, x1 = 350;
+    const span = ts => ts && ts.length ? ts[ts.length - 1].t - ts[0].t : 0;
+    const T = Math.max(4000, span(baseTaps), span(curTaps));
+    const X = t => x0 + (t / T) * (x1 - x0);
+    const row = (ts, y, cls, label) => {
+      let h = `<text x="0" y="${y + 4}">${label}</text><line class="r-line" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`;
+      if (!ts || !ts.length) return h + `<text x="${x0 + 6}" y="${y - 6}">нет данных</text>`;
+      const t0 = ts[0].t;
+      for (let i = 1; i < ts.length; i++) {
+        const gap = ts[i].t - ts[i - 1].t;
+        if (gap > 1500) {
+          const a = X(ts[i - 1].t - t0) + 4, b = X(ts[i].t - t0) - 4;
+          if (b > a) { h += `<rect class="r-pause" x="${a.toFixed(1)}" y="${y - 10}" width="${(b - a).toFixed(1)}" height="20" rx="4"/>`; if (b - a > 34) h += `<text class="r-pause-t" x="${((a + b) / 2).toFixed(1)}" y="${y + 3.5}" text-anchor="middle">пауза</text>`; }
+        }
+      }
+      h += ts.map(t => `<line class="${cls}" x1="${X(t.t - t0).toFixed(1)}" y1="${y - 9}" x2="${X(t.t - t0).toFixed(1)}" y2="${y + 9}"/>`).join('');
+      return h;
+    };
+    let h = `<svg class="chart" viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="Ритм нажатий: обычная сессия и текущий перевод">`;
+    h += row(baseTaps, 20, 'r-base', 'обычно');
+    h += row(curTaps, 54, 'r-cur', 'сейчас');
+    h += `<text x="${x0}" y="${H - 2}">0 с</text><text x="${x1}" y="${H - 2}" text-anchor="end">${fmt0(T / 1000)} с</text>`;
+    h += '</svg>';
+    $('#rhythm').innerHTML = h;
+  }
+
+  /* ---------- мобильная версия: обвязка ---------- */
+  function pulsePipe() {}
+  function runPipe() {}
+  function guide() {}
+  let bankSeen = false;
+
+  function updateChip(r, started) {
+    $('#mScore').textContent = started ? r.total : '—';
+    const pulse = state.step === 2 && state.phase === 'result' && !bankSeen;
+    $('#mChip').className = 'm-chip' + (started ? ' ' + r.decision : '') + (pulse ? ' pulse' : '');
+  }
+  // шторки встают ровно под верхнюю полоску, какой бы высоты она ни была
+  const syncBar = () => document.documentElement.style.setProperty('--barh', $('.m-bar').offsetHeight + 'px');
+  window.addEventListener('resize', syncBar);
+  function setBar(step, hint) { $('#mStep').textContent = step; $('#mHint').textContent = hint; syncBar(); }
+  function updateGuide() {
+    if (state.auto) return;
+    const s = state.step, ph = state.phase;
+    if (s === 1 && ph === 'home') setBar('1 из 2 · Обычный перевод', 'Нажмите «Мама» в частых переводах');
+    else if (s === 1 && ph === 'form') setBar('1 из 2 · Обычный перевод', 'Введите 1 500 и нажмите «Перевести»');
+    else if (s === 1 && ph === 'result') setBar(state.calm && state.calm.f ? 'Профиль готов: 10 из 10' : 'Профиль типовой', 'Нажмите «На главную»');
+    else if (s === 2 && ph === 'call-incoming') setBar('2 из 2 · Звонок мошенника', 'Примите вызов');
+    else if (s === 2 && ph === 'home') setBar('2 из 2 · Звонок мошенника', 'Как велит звонящий: «Телефон, карта или счёт»');
+    else if (s === 2 && ph === 'form') setBar('2 из 2 · Ввод под диктовку', 'Вводите номер и сумму — вас торопят');
+    else if (s === 2 && ph === 'result' && state.last) setBar(`Итог: ${state.last.total} — ${SHORT[state.last.decision]}`, 'Нажмите «Банк видит» — там разбор');
+  }
+
+  function showInter() {
+    $('#mInterText').textContent = state.calm && state.calm.f
+      ? 'Профиль готов: 10 из 10 сессий. Теперь вам звонит «служба безопасности банка». Номер и сумму продиктуют и будут торопить — вводите так, будто это всерьёз.'
+      : 'Касаний было мало, поэтому профиль типовой. Теперь вам звонит «служба безопасности банка». Номер и сумму продиктуют и будут торопить.';
+    $('#mInter').hidden = false;
+    setBar('Прошла неделя', 'Вам звонят');
+  }
+  function hideInter() { $('#mInter').hidden = true; }
+  function openBank() {
+    bankSeen = true; $('#mChip').classList.remove('pulse');
+    $('#mBank').hidden = false; $('#mBankBody').scrollTop = 0;
+  }
+  function closeBank() { $('#mBank').hidden = true; }
+  function onMeasureButton() {
+    if (state.auto) return;
+    if (state.step === 1) { closeSheet(true); showInter(); }
+    else openBank();
+  }
+
+  /* ---------- автодемо ---------- */
+  const sleep = ms => new Promise(res => setTimeout(res, ms));
+  class Stop extends Error {}
+  async function autoplay() {
+    $('#mIntro').hidden = true;
+    resetAll();
+    const tok = ++state.autoToken;
+    const wait = async ms => { await sleep(ms); if (tok !== state.autoToken) throw new Stop(); };
+    state.auto = true; screen.classList.add('auto');
+    const finger = $('#finger');
+    const keyEl = k => k === 'send' ? $('#send') : screen.querySelector(`.key[data-k="${k}"]`);
+    const move = (el, ox, oy) => { const p = screenPoint(el, ox, oy); finger.style.left = p.x + 'px'; finger.style.top = p.y + 'px'; return p; };
+    async function tapUi(el) {
+      finger.hidden = false;
+      await wait(60);
+      const p = move(el, 0, 0);
+      await wait(420);
+      finger.classList.add('down'); el.classList.add('pressed'); tapDotAt(p.x, p.y);
+      await wait(120);
+      finger.classList.remove('down'); el.classList.remove('pressed');
+      await wait(160);
+    }
+    async function play(script) {
+      let prev = performance.now();
+      finger.hidden = false;
+      for (const [k, gap, ox, oy, dur] of script) {
+        const el = keyEl(k);
+        const at = prev + gap;
+        await wait(Math.max(0, at - performance.now() - 150));
+        const p = move(el, ox, oy);
+        await wait(Math.max(0, at - performance.now()));
+        const t0 = performance.now();
+        finger.classList.add('down'); el.classList.add('pressed'); tapDotAt(p.x, p.y);
+        await wait(dur);
+        finger.classList.remove('down'); el.classList.remove('pressed');
+        if (k === 'send') finger.hidden = true;
+        registerTap(el, ox, oy, t0, dur);
+        prev = t0;
+      }
+    }
+    try {
+      setBar('1 из 2 · Обычный перевод', 'Скоринг сравнивает касания с профилем');
+      await wait(900);
+      await tapUi($('#goMama'));
+      openForm();
+      await wait(700);
+      await play(CALM);
+      await wait(2400);
+      closeSheet(true);
+      showInter();
+      await wait(2800);
+      hideInter();
+      startStep2();
+      setBar('2 из 2 · Звонок мошенника', 'Номер и сумму продиктуют и будут торопить');
+      await wait(1400);
+      await tapUi($('#accept'));
+      finger.hidden = true;
+      acceptCall();
+      setBar('2 из 2 · Звонок мошенника', 'Клиента ведут по приложению голосом');
+      await wait(2500);
+      setBubble(LINES.open);
+      await wait(1500);
+      await tapUi($('#goPhone'));
+      openForm();
+      setBar('2 из 2 · Ввод под диктовку', 'Касания разъезжаются, ритм рваный, паузы');
+      await wait(1300);
+      await play(SCAM_NUM);
+      await wait(2000);
+      await play(SCAM_AMT);
+      const r = state.last;
+      setBar(`Итог: ${r.total} — ${SHORT[r.decision]}`, `Без поведенческого модуля было бы ${r.without} — ${SHORT[r.decisionWithout]}`);
+      await wait(2200);
+      openBank();
+    } catch (e) {
+      if (!(e instanceof Stop)) throw e;
+      return;
+    } finally {
+      if (tok === state.autoToken) { state.auto = false; screen.classList.remove('auto'); finger.hidden = true; }
+    }
+  }
+
+  /* ---------- сброс ---------- */
+  function resetAll() {
+    state.autoToken++;
+    clearTimers();
+    state.auto = false; screen.classList.remove('auto'); $('#finger').hidden = true;
+    state.step = 1; state.phase = 'home'; state.view = 'home'; state.session = newSession('calm');
+    state.profile = DEFAULT_PROFILE; state.profileSessions = 9; state.calm = null; state.example = false; state.activeField = 'amt';
+    state.countdownEnd = 0; state.last = null; bankSeen = false;
+    const cd = $('#countdown'); cd.hidden = true; cd.classList.remove('hot'); delete cd.dataset.late; cd.textContent = '0:30';
+    $('#callClock').textContent = '00:00';
+    $('#incoming').hidden = true; closeSheet(true); hideInter(); closeBank();
+    $('#taps').innerHTML = '';
+    renderApp();
+    renderPanel(score(state.session, state.profile), 'wait');
+    updateGuide();
+  }
+
+  const DEFAULT_DOTS = (() => { let s = 7; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280; return Array.from({ length: 12 }, () => { const a = rnd() * Math.PI * 2, rr = 0.1 + rnd() * 0.32; return { ox: Math.cos(a) * rr, oy: Math.sin(a) * rr }; }); })();
+  const EX = exampleData();
+
+  $('#accept').addEventListener('click', () => { if (!state.auto) acceptCall(); });
+  $('#decline').addEventListener('click', () => { if (!state.auto) declineCall(); });
+  $('#mChip').addEventListener('click', openBank);
+  $('#mClose').addEventListener('click', closeBank);
+  $('#mRestart').addEventListener('click', () => { $('#mIntro').hidden = true; resetAll(); });
+  $('#mStart').addEventListener('click', () => { $('#mIntro').hidden = true; resetAll(); });
+  $('#mAuto').addEventListener('click', autoplay);
+  $('#mNext').addEventListener('click', () => { if (state.auto) return; hideInter(); startStep2(); });
+  $('#mAgain').addEventListener('click', () => { closeBank(); resetAll(); });
+  $('#mAuto2').addEventListener('click', () => { closeBank(); autoplay(); });
+  resetAll();
+  window.__scoring = { features, score, profileFrom, exampleData, DEFAULT_PROFILE, state };
+})();
+
+</script>
+</body>
+</html>
